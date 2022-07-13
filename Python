@@ -23,7 +23,7 @@ def Decision():  # Desicion de salida
 def Datos():  # Lee los datos del txt generado por el arduino
     temp_datos = []
     humed_datos = []
-    fdatos=open("C:\\Users\\nitro\\Documents\\Tercer Semestre\\Proyecto\\DatosVacioModificado.txt","r")    
+    fdatos=open("C:DatosVacioModificado.txt","r")    
     lineas = fdatos.readlines()
     for linea in lineas:
         x, y = linea.split()
