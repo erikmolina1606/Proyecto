@@ -19,7 +19,7 @@ def Decision():  # Desicion de salida
     if(decision=="SI" or decision=="si"):
         return 1
 
-ä
+
 def Datos():  # Lee los datos del txt generado por el arduino
     temp_datos = []
     humed_datos = []
