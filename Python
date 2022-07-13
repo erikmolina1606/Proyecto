@@ -1,0 +1,555 @@
+from cmath import log, pi
+from unittest import result
+import numpy as np
+import sympy as sym
+import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
+import math
+import pandas as pd
+from pylab import mpl
+from os import system
+
+
+def Decision():  # Desicion de salida
+    decision = input(
+        "¿DESEA CONTINUAR CON LA PRESENTACION DEL ALGORITMO DE METODOS NUMERICOS?: [si]/[no] ")
+    if(decision == "no"):
+        print("EL ALGORITMO DE METODOS NUMERICOS HA TERMINADO")
+        return 0
+    if(decision=="SI" or decision=="si"):
+        return 1
+
+ä
+def Datos():  # Lee los datos del txt generado por el arduino
+    temp_datos = []
+    humed_datos = []
+    fdatos=open("C:\\Users\\nitro\\Documents\\Tercer Semestre\\Proyecto\\DatosVacioModificado.txt","r")    
+    lineas = fdatos.readlines()
+    for linea in lineas:
+        x, y = linea.split()
+        temp_datos.append(float(x))
+        humed_datos.append(float(y))
+    fdatos.close()
+    # Menu en donde devuelve si quieren Temperatura o Humedad a lo solicitado
+    print("1. Temperatura(°C) vs Tiempo")
+    print("2. Humedad vs Tiempo")
+    opcion = int(input("Seleccione una opcion -> "))
+    if opcion == 1:
+        return temp_datos
+    elif opcion == 2:
+        return humed_datos
+
+
+def menu():  # Menu de opciones de distintos metodos
+    print("1. Minimos Cuadrados lineal")
+    print("2. Minimos Cuadrados Potencial")
+    print("3. Minimos Cuadrados Logaritmica")
+    print("4. Metodo de Newton diferencias finitas")
+    print("5. Metodo Lagrange")
+    print("6. Spline Cubico")
+    print("7. Salir")
+    opcion = int(input("Ingrese una opcion -> "))
+    return opcion
+
+
+def minimosCuadradosLineal(xi, fi):
+    print("Minimos Cuadrados Lineal")
+    valoresX = xi
+    valoresY = fi
+    sumaX = sum(valoresX)
+    sumaY = sum(valoresY)
+    print(valoresX)
+    xCuadrado = np.zeros(80)
+    for i in range(0, len(xCuadrado)):  # Obtengo el cuadrado de xi
+        xCuadrado[i] = valoresX[i]*valoresX[i]
+    sumaCuadradoX = sum(xCuadrado)  # Almaceno la suma de cuadrados de xi
+
+    yCuadrado = np.zeros(80)
+    for j in range(0, len(yCuadrado)):  # Obtengo el cuadrado de xi
+        yCuadrado[j] = valoresY[j]*valoresY[j]
+    sumaCuadradoY = sum(yCuadrado)  # Almaceno la suma de cuadrados de fi
+
+    Producto = np.zeros(80)
+    for k in range(0, len(Producto)):  # Producto de elementos xi y fi
+        Producto[k] = valoresX[k]*valoresY[j]
+    SumaProducto = sum(Producto)  # Almaceno la suma del producto
+
+    a = [[sumaCuadradoX, sumaX], [sumaX, 80]]
+    B = np.array([SumaProducto, sumaY])
+    result = np.linalg.solve(a, B)
+    print(result)  # Imprime ya los resultados a,B
+    print(result[0])  # Imprime a
+    print(result[1])  # Imprime B
+    print("y =", result[0], "x + ", result[1])
+
+    a = result[0]
+    b = result[1]
+    x = sym.Symbol('x')
+    # Puntos para la grafica
+    polinomioNuevo = ((a*x)+b)
+    px = sym.lambdify(x, polinomioNuevo)
+    minimo = np.min(xi)
+    maximo = np.max(xi)
+    pxi = np.linspace(minimo, maximo, 80)
+    pfi = px(pxi)
+
+    # Grafica
+    plt.plot(xi, fi, 'o', label='Puntos')
+    plt.plot(pxi, pfi, label='Polinomio')
+    plt.legend()
+    plt.xlabel('xi')
+    plt.ylabel('fi')
+    plt.title('Interpolación Min Cuadrados Lineal')
+    plt.show()
+
+    plt.scatter(valoresX, valoresY)  # Grafica de dispersion
+    plt.title('Grafica de dispersion')
+    plt.show()
+
+    print("Coeficiente de correlacion para los datos reales: ")
+    PearsonReal = np.corrcoef(valoresX, valoresY)
+    print(PearsonReal)
+
+    # Evaluo la funcion desde 5 hasta 400, recojo 80 datos
+    datosFuncion = np.linspace(5, 400, 80)
+    x = datosFuncion
+    y = ((a*x)+b)
+
+    print("Coeficiente de correlacion para los datos calculados: ")
+    PearsonCalculado = np.corrcoef(valoresX, y)
+    print(PearsonCalculado)
+
+    # Evaluacion de la funcion en un punto dado
+    x = float(input("Ingrese el valor a evaluar en x: "))
+    polinomio = ((a*x)+b)  # Polinomio formado
+    convertir = str(polinomio)
+    y = eval(convertir)
+    print("y={}".format(y))
+
+
+def minimosCuadradosPotencial(xi, fi):
+    print("Minimos Cuadrados Potencial")
+    logX = np.log10(xi)
+    sumaX = sum(logX)
+
+    logY = np.log10(fi)
+    sumaY = sum(logY)
+
+    logXCuadrado = np.zeros(80)
+    for i in range(0, len(logX)):  # Multiplica xi * xi TIEMPO
+        logXCuadrado[i] = logX[i]*logX[i]
+    SumaCuadradoX = sum(logXCuadrado)  # Sumatoria de la tabla LogX al cuadrado
+
+    logYCuadrado = np.zeros(80)
+    for j in range(0, len(logY)):  # Multiplica fi * fi TEMPERATURA
+        logYCuadrado[j] = logY[j]*logY[j]
+    SumaCuadradoY = sum(logYCuadrado)  # Sumatoria de la tabla LogY al cuadrado
+    Producto = np.zeros(80)
+    for k in range(0, len(Producto)):
+        Producto[k] = logX[k]*logY[k]
+
+    SumaProducto = sum(Producto)
+
+    a = [[SumaCuadradoX, sumaX], [sumaX, 80]]
+    B = np.array([SumaProducto, sumaY])
+    result = np.linalg.solve(a, B)
+    b = pow(10, result[1])  # Transformo B en b, del logaritmo 10
+    print(b)
+    # Formo la ecuacion o polinomio
+    print("y = ", b, "x^(", result[0], ")")
+    a = result[0]
+    x = sym.Symbol('x')
+    # Puntos para la grafica
+    polinomioNuevo = b*(pow(x, a))
+    px = sym.lambdify(x, polinomioNuevo)
+    minimo = np.min(xi)
+    maximo = np.max(xi)
+    pxi = np.linspace(minimo, maximo, 80)
+    pfi = px(pxi)
+
+    # Grafica
+    plt.plot(xi, fi, 'o', label='Puntos')
+    plt.plot(pxi, pfi, label='Polinomio')
+    plt.legend()
+    plt.xlabel('xi')
+    plt.ylabel('fi')
+    plt.title('Interpolación Min Cuadrados Potencial')
+    plt.show()
+
+    plt.scatter(xi, fi)  # Grafica de dispersion
+    plt.title('Grafica de dispersion')
+    plt.show()
+
+    print("Coeficiente de correlacion para los datos reales: ")
+    PearsonReal = np.corrcoef(logX, logY)
+    print(PearsonReal)
+
+    # Evaluo la funcion desde 5 hasta 400, recojo 80 datos
+    datosFuncion = np.linspace(5, 400, 80)
+    x = datosFuncion
+    y = b*(pow(x, a))
+
+    print("Coeficiente de correlacion para los datos calculados: ")
+    PearsonCalculado = np.corrcoef(logX, y)
+    print(PearsonCalculado)
+
+    # Evaluacion de la funcion en un punto dado
+    x = float(input("Ingrese el valor a evaluar en x: "))
+    polinomio = b*(pow(x, a))  # Polinomio formado
+    convertir = str(polinomio)
+    y = eval(convertir)
+    print("y={}".format(y))
+
+
+def minimosCuadradosLogaritmica(x, y):
+
+    # Declaramos matrices vacias
+    x2 = []
+    y2 = []
+    xy = []
+    log_y = []
+    Matriz = []
+    ab = []
+
+    # Las añadimos como Columnas
+    x_t = pd.Series(x, name="x")
+    y_t = pd.Series(y, name="f(x)")
+
+    log_x = np.log(x)
+    log_y = np.log(y)
+
+    log_x_t = pd.Series(log_x, name="log(x)")
+    log_y_t = pd.Series(log_y, name="log(y)")
+    Suma_logx = sum(log_x)
+    Suma_logy = sum(log_y)
+
+    for k in range(len(log_y)):
+        xy.append(log_x[k]*log_y[k])
+
+    x2 = [n**2 for n in log_x]
+    y2 = [n**2 for n in log_y]
+    # Sumatorias
+    Sumax2 = sum(x2)
+    Sumaxy = sum(xy)
+    # Añadimos como columnas
+    xy_t = pd.Series(xy, name="x*y")
+    y2_t = pd.Series(x2, name="x^2")
+    x2_t = pd.Series(y2, name="y^2")
+
+    tabla = pd.concat([x_t, y_t, log_x_t, log_y_t, x2_t, y2_t, xy_t], axis=1)
+    df = pd.DataFrame(tabla)
+    pd.set_option("display.max_rows", 80)
+    print(df)
+
+    Matriz = [[Sumax2, Suma_logx], [Suma_logx, len(x)]]
+    ab = [Sumaxy, Suma_logy]
+    print(Matriz)
+    print(ab)
+
+    log_x = np.log(x)
+    log_y = np.log(y)
+
+    AB = np.polyfit(log_x, y, 1)
+    print("Esto es coeficientes a , b =", AB)
+
+    c = AB[0] * log_x + AB[1]
+    plt.plot(log_x, y, "o")
+    plt.plot(log_x, c)
+    plt.show()
+
+
+def metodoNewtonDiferenciasFinitas(xi, fi):
+    print("Metodos Newton Diferencias Finitas")
+    titulo = ['i   ', 'xi  ', 'fi  ']
+    n = len(xi)
+    ki = np.arange(0, n, 1)
+    tabla = np.concatenate(([ki], [xi], [fi]), axis=0)
+    tabla = np.transpose(tabla)
+
+    # diferencias divididas vacia
+    dfinita = np.zeros(shape=(n, n), dtype=float)
+    tabla = np.concatenate((tabla, dfinita), axis=1)
+
+    # Calcula tabla, inicia en columna 3
+    [n, m] = np.shape(tabla)
+    diagonal = n-1
+    j = 3
+    while (j < m):
+        # Añade título para cada columna
+        titulo.append('F['+str(j-2)+']')
+
+        # cada fila de columna
+        i = 0
+        paso = j-2  # inicia en 1
+        while (i < diagonal):
+            denominador = (xi[i+paso]-xi[i])
+            numerador = tabla[i+1, j-1]-tabla[i, j-1]
+            tabla[i, j] = numerador/denominador
+            i = i+1
+        diagonal = diagonal - 1
+        j = j+1
+
+    # POLINOMIO con diferencias Divididas
+    # caso: puntos equidistantes en eje x
+    dDividida = tabla[0, 3:]
+    n = len(dfinita)
+
+    # expresión del polinomio con Sympy
+    x = sym.Symbol('x')
+    polinomio = fi[0]
+    for j in range(1, n, 1):
+        factor = dDividida[j-1]
+        termino = 1
+        for k in range(0, j, 1):
+            termino = termino*(x-xi[k])
+        polinomio = polinomio + termino*factor
+
+    # simplifica multiplicando entre (x-xi)
+    polisimple = polinomio.expand()
+
+    # polinomio para evaluacion numérica
+    px = sym.lambdify(x, polisimple)
+
+    # Puntos para la gráfica
+    muestras = 101
+    a = np.min(xi)
+    b = np.max(xi)
+    pxi = np.linspace(a, b, muestras)
+    pfi = px(pxi)
+
+    # SALIDA
+    np.set_printoptions(precision=4)
+    print('Tabla Diferencia Dividida')
+    print([titulo])
+    print(tabla)
+    print('dDividida: ')
+    print(dDividida)
+    print('polinomio: ')
+    print(polinomio)
+    print('polinomio simplificado: ')
+    print(polisimple)
+
+    # Gráfica
+    plt.plot(xi, fi, 'o', label='Puntos')  # Label es el titulo
+
+    plt.plot(pxi, pfi, label='Polinomio')
+    plt.legend()
+    plt.xlabel('xi')
+    plt.ylabel('fi')
+    plt.title('Diferencias Divididas - Newton')
+    plt.show()
+
+    plt.scatter(xi, fi)  # Grafica de dispersion
+    plt.title('Grafica de dispersion')
+    plt.show()
+
+    print("Coeficiente de correlacion para los datos reales: ")
+    PearsonReal = np.corrcoef(xi, fi)
+    print(PearsonReal)
+
+    # Evaluo la funcion desde 5 hasta 400, recojo 80 datos
+    datosFuncion = np.linspace(5, 400, 80)
+    x = datosFuncion
+    y = 4.83569015209525e-155*x**79 - 7.69147205433235e-151*x**78 + 6.01387805433898e-147*x**77 - 3.0813305540312e-143*x**76 + 1.16363358965091e-139*x**75 - 3.45396531949067e-136*x**74 + 8.39209512007255e-133*x**73 - 1.71634054779869e-129*x**72 + 3.01553722549333e-126*x**71 - 4.62256777772699e-123*x**70 + 6.25807858216699e-120*x**69 - 7.55590079187558e-117*x**68 + 8.20169077783266e-114*x**67 - 8.05741499147602e-111*x**66 + 7.20466728892263e-108*x**65 - 5.89181260567251e-105*x**64 + 4.42487260003159e-102*x**63 - 3.06288503204642e-99*x**62 + \
+        1.96020364951465e-96*x**61 - 1.16307409712662e-93*x**60 + 6.41359999005766e-91*x**59 - 3.2939324493226e-88*x**58 + 1.57859048945928e-85*x**57 - 7.07125880549676e-83*x**56 + 2.96513641568733e-80*x**55 - 1.16543586644752e-77*x**54 + 4.29870149426785e-75*x**53 - 1.48950377229433e-72 * \
+        x**52 + 4.85285863712628e-70*x**51 - 1.48782657909467e-67*x**50 + 4.29543340118458e-65*x**49 - 1.16847844138891e-62*x**48 + \
+        2.99649027129068e-60*x**47 - 7.2471220126804e-58*x**46 + 1.65358088082424e-55 * \
+        x**45 - 3.56045270600603e-53*x**44 + 7.23577420898366e-51*x**43
+    - 1.38807589989273e-48*x**42 + 2.51366438890205e-46*x**41 - 4.29688954965397e-44*x**40 + 6.93283068522159e-42*x**39 - 1.05560865055427e-39*x**38 + 1.51644690687207e-37*x**37 - 2.05470031804904e-35*x**36 + 2.62482471087541e-33*x**35 - \
+        3.15997559690718e-31*x**34 + 3.58315994267442e-29*x**33 - 3.82454760442362e-27*x**32 + 3.83990881483146e-25*x**31 - \
+        3.62364270109217e-23*x**30 + 3.21121018348566e-21*x**29 - \
+        2.66969736211046e-19*x**28 + 2.0799296588757e-17*x**27
+    1.51670228406831e-15*x**26 + 1.03379069261231e-13*x**25 - 6.57656773752379e-12*x**24 + 3.89839762377589e-10*x**23 - 2.14933099116641e-8*x**22 + 1.09995901965997e-6*x**21 - 5.21358440343783e-5*x**20 + 0.0022830003069441*x**19 - 0.0921054190680499*x**18 + 3.41297045999784*x**17 - 115.755657186752*x**16 + 3579.44764678877*x**15 - 100468.00906194*x**14 + \
+        2546705.01092638*x**13 - 57961383.7521354*x**12 + 1176443636.74453*x**11 - 21126587046.1704*x**10 + 332519423926.329*x**9 - 4535126192205.55*x**8 + 52852214726994.1*x**7 - \
+        517100349498102.0*x**6 + 4.15117083959251e+15*x**5 - 2.65086332424189e+16*x**4 + \
+        1.28811868836382e+17*x**3 - 4.44497453566246e+17 * \
+        x**2 + 9.62395861417836e+17*x - 9.72412224682133e+17
+
+    print("Coeficiente de correlacion para los datos calculados: ")
+    PearsonCalculado = np.corrcoef(xi, y)
+    print(PearsonCalculado)
+
+  # Evaluacion de la funcion en un punto dado
+    x = float(input("Ingrese el valor a evaluar en x: "))
+    convertir = str(polinomio)
+    y = eval(convertir)
+    print("y={}".format(y))
+
+
+def metodoLagrange(xi, fi):
+    print("Metodos Lagrange")
+    n = len(xi)
+    x = sym.Symbol('x')
+    polinomio = 0
+    divisorL = np.zeros(n, dtype=float)
+    for i in range(0, n, 1):
+
+        # Termino de Lagrange
+        numerador = 1
+        denominador = 1
+        for j in range(0, n, 1):
+            if (j != i):
+                numerador = numerador*(x-xi[j])
+                denominador = denominador*(xi[i]-xi[j])
+        terminoLi = numerador/denominador
+
+        polinomio = polinomio + terminoLi*fi[i]
+        divisorL[i] = denominador
+
+    # simplifica el polinomio
+    polisimple = polinomio.expand()
+
+    # para evaluación numérica
+    px = sym.lambdify(x, polisimple)
+
+    # Puntos para la gráfica
+    muestras = 101
+    a = np.min(xi)
+    b = np.max(xi)
+    pxi = np.linspace(a, b, muestras)
+    pfi = px(pxi)
+
+    # SALIDA
+    print('    valores de fi: ', fi)
+    print('divisores en L(i): ', divisorL)
+    print()
+    print('Polinomio de Lagrange, expresiones ', polinomio)
+    print('Polinomio de Lagrange: ', polisimple)
+
+    # Gráfica
+    plt.plot(xi, fi, 'o', label='Puntos')
+    plt.plot(pxi, pfi, label='Polinomio')
+    plt.legend()
+    plt.xlabel('xi')
+    plt.ylabel('fi')
+    plt.title('Interpolación Lagrange')
+    plt.show()
+
+    plt.scatter(xi, fi)  # Grafica de dispersion
+    plt.title('Grafica de dispersion')
+    plt.show()
+
+    print("Coeficiente de correlacion para los datos reales: ")
+    PearsonReal = np.corrcoef(xi, fi)
+    print(PearsonReal)
+
+    # Evaluo la funcion desde 5 hasta 400, recojo 80 datos
+    datosFuncion = np.linspace(5, 400, 80)
+    x = datosFuncion
+    y = 4.83569015209525e-155*x**79 - 7.69147205433235e-151*x**78 + 6.01387805433898e-147*x**77 - 3.0813305540312e-143*x**76 + 1.16363358965091e-139*x**75 - 3.45396531949067e-136*x**74 + 8.39209512007255e-133*x**73 - 1.71634054779869e-129*x**72 + 3.01553722549333e-126*x**71 - 4.62256777772699e-123*x**70 + 6.25807858216699e-120*x**69 - 7.55590079187558e-117*x**68 + 8.20169077783266e-114*x**67 - 8.05741499147602e-111*x**66 + 7.20466728892263e-108*x**65 - 5.89181260567251e-105*x**64 + 4.42487260003159e-102*x**63 - 3.06288503204642e-99*x**62 + \
+        1.96020364951465e-96*x**61 - 1.16307409712662e-93*x**60 + 6.41359999005766e-91*x**59 - 3.2939324493226e-88*x**58 + 1.57859048945928e-85*x**57 - 7.07125880549676e-83*x**56 + 2.96513641568733e-80*x**55 - 1.16543586644752e-77*x**54 + 4.29870149426785e-75*x**53 - 1.48950377229433e-72 * \
+        x**52 + 4.85285863712628e-70*x**51 - 1.48782657909467e-67*x**50 + 4.29543340118458e-65*x**49 - 1.16847844138891e-62*x**48 + \
+        2.99649027129068e-60*x**47 - 7.2471220126804e-58*x**46 + 1.65358088082424e-55 * \
+        x**45 - 3.56045270600603e-53*x**44 + 7.23577420898366e-51*x**43
+    - 1.38807589989273e-48*x**42 + 2.51366438890205e-46*x**41 - 4.29688954965397e-44*x**40 + 6.93283068522159e-42*x**39 - 1.05560865055427e-39*x**38 + 1.51644690687207e-37*x**37 - 2.05470031804904e-35*x**36 + 2.62482471087541e-33*x**35 - \
+        3.15997559690718e-31*x**34 + 3.58315994267442e-29*x**33 - 3.82454760442362e-27*x**32 + 3.83990881483146e-25*x**31 - \
+        3.62364270109217e-23*x**30 + 3.21121018348566e-21*x**29 - \
+        2.66969736211046e-19*x**28 + 2.0799296588757e-17*x**27
+    1.51670228406831e-15*x**26 + 1.03379069261231e-13*x**25 - 6.57656773752379e-12*x**24 + 3.89839762377589e-10*x**23 - 2.14933099116641e-8*x**22 + 1.09995901965997e-6*x**21 - 5.21358440343783e-5*x**20 + 0.0022830003069441*x**19 - 0.0921054190680499*x**18 + 3.41297045999784*x**17 - 115.755657186752*x**16 + 3579.44764678877*x**15 - 100468.00906194*x**14 + \
+        2546705.01092638*x**13 - 57961383.7521354*x**12 + 1176443636.74453*x**11 - 21126587046.1704*x**10 + 332519423926.329*x**9 - 4535126192205.55*x**8 + 52852214726994.1*x**7 - \
+        517100349498102.0*x**6 + 4.15117083959251e+15*x**5 - 2.65086332424189e+16*x**4 + \
+        1.28811868836382e+17*x**3 - 4.44497453566246e+17 * \
+        x**2 + 9.62395861417836e+17*x - 9.72412224682133e+17
+
+    print("Coeficiente de correlacion para los datos calculados: ")
+    PearsonCalculado = np.corrcoef(xi, y)
+    print(PearsonCalculado)
+
+    # Evaluacion de la funcion en un punto dado
+    x = float(input("Ingrese el valor a evaluar en x: "))
+    convertir = str(polinomio)
+    y = eval(convertir)
+    print("y={}".format(y))
+
+
+def splineCubico(x, y):
+
+    mpl.rcParams['font.sans-serif'] = ['SimHei']
+    n = len(x)-1  # Conveniente para el uso posterior de n
+    h = np.zeros(n)
+    for i in range(0, n):
+        h[i] = x[i+1]-x[i]
+    u = np.zeros(n-1)
+    l = np.zeros(n-1)
+    for i in range(0, n-1):
+        u[i] = h[i]/(h[i]+h[i+1])
+        l[i] = 1-u[i]
+    d = np.zeros(n-1)
+    for i in range(1, n-2):  # Asignación d [1] a d [n-3]
+        d[i] = 3*(l[i-1]*(y[i+2]-y[i+1])/h[i+1]+u[i-1]*(y[i+1]-y[i])/h[i])
+        # 0.8 y 0.2 son condiciones de frontera de soporte fijo
+        d[0] = 3*(l[0]*(y[1]-y[0])/h[0]/+u[0]*(y[2]-y[1]) / h[1])-l[0]*0.8
+        d[n-2] = 3*(l[n-2]*(y[n-1]-y[n-2])/h[n-2]/+u[n-2]
+                    * (y[n]-y[n-1])/h[n-1])-l[n-2]*0.2
+    print(d)
+    A = np.zeros([n-1, n-1])
+    for i in range(1, n-2):
+        A[i, i-1] = l[i-1]
+        A[i, i] = 2
+        A[i, i+1] = u[i]
+    A[0, 0] = A[n-2, n-2] = 2
+    A[0, 1] = u[0]
+    A[n-2, n-3] = l[n-2]
+    print(A)
+    M0 = np.array(n)
+    M0 = np.linalg.solve(A, d)
+    M = np.zeros(n+1)
+    for i in range(1, n):
+        M[i] = M0[i-1]
+    M[0] = 0.8
+    M[n] = 0.2
+    print(M)
+    # Dibujo
+    for i in range(0, n):
+        x0 = np.linspace(x[i], x[i+1], 10000)
+        y0 = y[i]*((x0-x[i+1])**2)*(h[i]+2*(x0-x[i]))/(h[i]**3)\
+            + y[i+1]*((x0-x[i])**2)*(h[i]+2*(x[i+1]-x0))/(h[i]**3)\
+            + M[i]*((x0-x[i+1])**2)*(x0-x[i])/(h[i]**2)\
+            + M[i+1]*((x0-x[i])**2)*(x0-x[i+1])/(h[i]**2)
+        plt.plot(x0, y0, color='red')
+    plt.plot(x0, y0, color='red', label=u"Interpolación de splines cúbicos")
+    plt.plot(x, y, marker='o', mec='r', mfc='w', label=u"Primitivo")
+    plt.title("Interpolación de splines cúbicos")
+    plt.legend()
+    plt.show()
+
+
+x = []
+y = []
+y = Datos()
+aux = 0  # Empieza desde -5 para tener 80 datos
+decision = 1
+for k in range(len(y)):  # Devuelve tiempos de 5 en 5
+    aux = aux+5
+    x.append(aux)
+
+while(decision == 1):
+    opcion = menu()
+    if opcion == 1:
+        minimosCuadradosLineal(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 2:
+        minimosCuadradosPotencial(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 3:
+        minimosCuadradosLogaritmica(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 4:
+        metodoNewtonDiferenciasFinitas(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 5:
+        metodoLagrange(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 6:
+        splineCubico(x, y)
+        system("Pause")
+        system("cls")
+    elif opcion == 7:
+        decision = Decision()
+        system("Pause")
+        system("cls")
